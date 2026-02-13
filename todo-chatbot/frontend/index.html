@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Phase 4 AI Chatbot</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div id="app">
+        <header>
+            <h1>Phase 4 AI Todo Assistant</h1>
+            <p>Natural Language Task Management</p>
+        </header>
+        
+        <main>
+            <!-- Login/Signup Section -->
+            <section id="auth-section">
+                <h2>Account</h2>
+                <div id="auth-toggle">
+                    <button id="show-login" class="auth-btn active">Login</button>
+                    <button id="show-signup" class="auth-btn">Sign Up</button>
+                </div>
+                
+                <div id="login-form" class="auth-form">
+                    <h3>Login</h3>
+                    <input type="email" id="login-email" placeholder="Email">
+                    <input type="password" id="login-password" placeholder="Password">
+                    <button id="login-btn">Login</button>
+                </div>
+                
+                <div id="signup-form" class="auth-form hidden">
+                    <h3>Sign Up</h3>
+                    <input type="email" id="signup-email" placeholder="Email">
+                    <input type="password" id="signup-password" placeholder="Password">
+                    <button id="signup-btn">Sign Up</button>
+                </div>
+                
+                <div id="logout-section" class="hidden">
+                    <p>Welcome, <span id="user-email"></span>!</p>
+                    <button id="logout-btn">Logout</button>
+                </div>
+            </section>
+            
+            <!-- Chat Interface (visible only when logged in) -->
+            <section id="chat-section" class="hidden">
+                <h2>Chat with Your AI Assistant</h2>
+                <div id="chat-container">
+                    <div id="messages-container">
+                        <!-- Messages will appear here -->
+                    </div>
+                    <div id="input-container">
+                        <input type="text" id="message-input" placeholder="Ask me to manage your tasks...">
+                        <button id="send-message">Send</button>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+    
+    <script src="script.js"></script>
+</body>
+</html>

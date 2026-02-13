@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Todo AI Chatbot</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background-color: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .chat-container {
+            height: 400px;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-radius: 5px;
+            background-color: #fafafa;
+        }
+        .message {
+            margin-bottom: 10px;
+            padding: 8px 12px;
+            border-radius: 10px;
+            max-width: 80%;
+        }
+        .user-message {
+            background-color: #dcf8c6;
+            margin-left: auto;
+        }
+        .bot-message {
+            background-color: #e5e5ea;
+            margin-right: auto;
+        }
+        .input-container {
+            display: flex;
+        }
+        #user-input {
+            flex-grow: 1;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        #send-btn {
+            padding: 10px 20px;
+            margin-left: 10px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        #send-btn:hover {
+            background-color: #45a049;
+        }
+        .todo-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            border-bottom: 1px solid #eee;
+        }
+        .todo-title {
+            font-weight: bold;
+        }
+        .todo-description {
+            font-size: 0.9em;
+            color: #666;
+        }
+        .todo-actions button {
+            margin-left: 5px;
+            padding: 5px 10px;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+        .complete-btn {
+            background-color: #4CAF50;
+            color: white;
+        }
+        .delete-btn {
+            background-color: #f44336;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Todo AI Chatbot</h1>
+        <div id="chat-container" class="chat-container"></div>
+        <div class="input-container">
+            <input type="text" id="user-input" placeholder="Ask me to manage your todos...">
+            <button id="send-btn">Send</button>
+        </div>
+        
+        <h2>Your Todos</h2>
+        <div id="todos-container"></div>
+    </div>
+
+    <script>
+        // Add a message to the chat container
+        function addMessage(message, isUser) {
+            const chatContainer = document.getElementById('chat-container');
+            const messageDiv = document.createElement('div');
+            messageDiv.classList.add('message');
+            messageDiv.classList.add(isUser ? 'user-message' : 'bot-message');
+            messageDiv.textContent = message;
+            chatContainer.appendChild(messageDiv);
+            
+            // Scroll to bottom
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+
+        // Send a message to the chatbot API
+        async function sendMessage() {
+            const inputElement = document.getElementById('user-input');
+            const message = inputElement.value.trim();
+            
+            if (!message) return;
+            
+            // Add user message to chat
+            addMessage(message, true);
+            inputElement.value = '';
+            
+            try {
+                const response = await fetch('/chatbot/chat', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ message: message })
+                });
+                
+                const data = await response.json();
+                
+                // Add bot response to chat
+                addMessage(data.response, false);
+                
+                // Refresh todos if an action was taken
+                if (data.action_taken) {
+                    loadTodos();
+                }
+            } catch (error) {
+                addMessage('Sorry, I encountered an error. Please try again.', false);
+                console.error('Error:', error);
+            }
+        }
+
+        // Load todos from the API
+        async function loadTodos() {
+            try {
+                const response = await fetch('/todos/');
+                const todos = await response.json();
+                
+                const todosContainer = document.getElementById('todos-container');
+                todosContainer.innerHTML = '';
+                
+                if (todos.length === 0) {
+                    todosContainer.innerHTML = '<p>Your todo list is empty. Add items using the chat!</p>';
+                    return;
+                }
+                
+                todos.forEach(todo => {
+                    const todoDiv = document.createElement('div');
+                    todoDiv.className = 'todo-item';
+                    
+                    const todoInfo = document.createElement('div');
+                    todoInfo.innerHTML = `
+                        <div class="todo-title">${todo.title}</div>
+                        <div class="todo-description">${todo.description}</div>
+                    `;
+                    
+                    const todoActions = document.createElement('div');
+                    todoActions.className = 'todo-actions';
+                    
+                    const completeBtn = document.createElement('button');
+                    completeBtn.className = 'complete-btn';
+                    completeBtn.textContent = todo.completed ? 'Completed' : 'Complete';
+                    completeBtn.disabled = todo.completed;
+                    completeBtn.onclick = () => completeTodo(todo.id);
+                    
+                    const deleteBtn = document.createElement('button');
+                    deleteBtn.className = 'delete-btn';
+                    deleteBtn.textContent = 'Delete';
+                    deleteBtn.onclick = () => deleteTodo(todo.id);
+                    
+                    todoActions.appendChild(completeBtn);
+                    todoActions.appendChild(deleteBtn);
+                    
+                    todoDiv.appendChild(todoInfo);
+                    todoDiv.appendChild(todoActions);
+                    
+                    todosContainer.appendChild(todoDiv);
+                });
+            } catch (error) {
+                console.error('Error loading todos:', error);
+            }
+        }
+
+        // Complete a todo
+        async function completeTodo(id) {
+            try {
+                await fetch(`/todos/${id}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        id: id,
+                        title: '', // Will be replaced by the actual todo
+                        description: '',
+                        completed: true
+                    })
+                });
+                
+                loadTodos(); // Refresh the list
+            } catch (error) {
+                console.error('Error completing todo:', error);
+            }
+        }
+
+        // Delete a todo
+        async function deleteTodo(id) {
+            try {
+                await fetch(`/todos/${id}`, {
+                    method: 'DELETE'
+                });
+                
+                loadTodos(); // Refresh the list
+            } catch (error) {
+                console.error('Error deleting todo:', error);
+            }
+        }
+
+        // Event listeners
+        document.getElementById('send-btn').addEventListener('click', sendMessage);
+        document.getElementById('user-input').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                sendMessage();
+            }
+        });
+
+        // Initialize
+        window.onload = function() {
+            addMessage('Hello! I\'m your AI assistant. I can help you manage your todo list. Try saying "add a todo to buy groceries".', false);
+            loadTodos();
+        };
+    </script>
+</body>
+</html>
